@@ -10,7 +10,7 @@ const app = express();
 
 // Allow Frontend running on port 5173
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://focus-mode-frontend.onrender.com",
   methods: ["GET", "POST"]
 }));
 
