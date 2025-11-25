@@ -105,24 +105,38 @@ app.post('/daily-checkin', async (req, res) => {
 });
 
 // --- ROUTE: Assign Intervention (Called by n8n) ---
+// --- ROUTE: Assign Intervention (Called by n8n) ---
 app.post('/assign-intervention', async (req, res) => {
   try {
     console.log("Received intervention request from n8n:", req.body);
-    const { student_id, task_title, task_description } = req.body;
+    const { task_title, task_description } = req.body;
 
-    // Create Intervention
+    // 🔍 1. Find the latest student who is locked and needs intervention
+    const studentRes = await db.query(
+      "SELECT id FROM students WHERE status='locked' ORDER BY id DESC LIMIT 1"
+    );
+
+    if (studentRes.rowCount === 0) {
+      return res.status(400).json({ error: 'No locked student found' });
+    }
+
+    const student_id = studentRes.rows[0].id;
+
+    // 🏗 2. Create Intervention
     const intRes = await db.query(
       'INSERT INTO interventions (student_id, title, description, status) VALUES ($1,$2,$3,$4) RETURNING id',
       [student_id, task_title, task_description || 'Check email for details', 'assigned']
     );
 
-    // Update Student to Remedial
+    // 🔄 3. Update the Student status to "remedial"
     await db.query(
       'UPDATE students SET status=$1, current_intervention_id=$2 WHERE id=$3',
       ['remedial', intRes.rows[0].id, student_id]
     );
 
+    // 📤 4. Return Updated State
     res.json(await getStudentState(student_id));
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
