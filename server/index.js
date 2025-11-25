@@ -157,7 +157,7 @@ app.post('/assign-intervention', async (req, res) => {
     return res.json(await getStudentState(student_id));
 
   } catch (err) {
-    console.error(err);
+ 
 
     if (req.headers.accept && req.headers.accept.includes('text/html')) {
       return res.status(500).send(`
