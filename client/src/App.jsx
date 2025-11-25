@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const API_BASE = "https://focus-mode.onrender.com/";
+const API_BASE = "https://focus-mode.onrender.com";
 const STUDENT_ID = 2; // Make sure this ID exists in your DB!
 
 export default function App() {
