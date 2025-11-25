@@ -105,41 +105,68 @@ app.post('/daily-checkin', async (req, res) => {
 });
 
 // --- ROUTE: Assign Intervention (Called by n8n) ---
-// --- ROUTE: Assign Intervention (Called by n8n) ---
+// --- ROUTE: Assign Intervention (Called by n8n or Browser Click) ---
 app.post('/assign-intervention', async (req, res) => {
   try {
-    console.log("Received intervention request from n8n:", req.body);
+    console.log("Received intervention request from:", req.headers['user-agent']);
     const { task_title, task_description } = req.body;
 
-    // 🔍 1. Find the latest student who is locked and needs intervention
+    // 🔍 Find locked student
     const studentRes = await db.query(
       "SELECT id FROM students WHERE status='locked' ORDER BY id DESC LIMIT 1"
     );
 
     if (studentRes.rowCount === 0) {
+      // 👇 Detect browser or API
+      if (req.headers.accept && req.headers.accept.includes('text/html')) {
+        return res.send(`
+          <h1 style="font-family: Arial; color: red;">⚠ No locked student found!</h1>
+          <p style="font-family: Arial;">There is no student currently needing intervention.</p>
+        `);
+      }
       return res.status(400).json({ error: 'No locked student found' });
     }
 
     const student_id = studentRes.rows[0].id;
 
-    // 🏗 2. Create Intervention
+    // 🏗 Create intervention
     const intRes = await db.query(
       'INSERT INTO interventions (student_id, title, description, status) VALUES ($1,$2,$3,$4) RETURNING id',
       [student_id, task_title, task_description || 'Check email for details', 'assigned']
     );
 
-    // 🔄 3. Update the Student status to "remedial"
+    // 🔄 Update student status
     await db.query(
       'UPDATE students SET status=$1, current_intervention_id=$2 WHERE id=$3',
       ['remedial', intRes.rows[0].id, student_id]
     );
 
-    // 📤 4. Return Updated State
-    res.json(await getStudentState(student_id));
+    // 🎉 Detect browser vs API call
+    if (req.headers.accept && req.headers.accept.includes('text/html')) {
+      return res.send(`
+        <h1 style="font-family: Arial; color: green;">
+          🎉 Intervention Assigned Successfully!
+        </h1>
+        <p style="font-family: Arial; font-size: 16px;">
+          The student has been assigned a performance improvement task.
+        </p>
+      `);
+    }
+
+    // 📌 Return JSON for API (like original)
+    return res.json(await getStudentState(student_id));
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+
+    if (req.headers.accept && req.headers.accept.includes('text/html')) {
+      return res.status(500).send(`
+        <h1 style="color:red;font-family:Arial;">❌ Server Error</h1>
+        <p style="font-family:Arial;">Something went wrong while assigning the intervention.</p>
+      `);
+    }
+
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 
