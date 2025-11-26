@@ -1,0 +1,139 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "student-failed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        40
+      ],
+      "id": "5c391beb-885a-4d27-ad9b-2053aa6246ca",
+      "name": "Webhook",
+      "webhookId": "5793114a-e36d-4a42-b35f-7ceeb3873073"
+    },
+    {
+      "parameters": {
+        "fromEmail": "namanbhugra7@gmail.com",
+        "toEmail": "namanbhugra7@gmail.com",
+        "subject": "Student Needs Intervention",
+        "html": "=🚨 <b>Student needs help with performance!</b><br><br>\n\n<b>Student ID:</b> {{$json.body.student_id}}<br>\n<b>Quiz Score:</b> {{$json.body.quiz_score}}<br>\n<b>Focus Minutes:</b> {{$json.body.focus_minutes}}<br><br>\n\n<a href=\"{{$execution.resumeUrl}}?student_id={{$json.body.student_id}}\">\n👉 Click here to Approve Task\n</a>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        280,
+        60
+      ],
+      "id": "bfc53260-2b02-4f8e-8223-5cf2eaab7914",
+      "name": "Send Email",
+      "webhookId": "6969bf38-2c74-44df-b87a-021b538da363",
+      "credentials": {
+        "smtp": {
+          "id": "oYBgVDDRhpA1roHz",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://focus-mode.onrender.com/assign-intervention",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "student_id",
+              "value": "={{$json.query.student_id || $json.body.student_id}}"
+            },
+            {
+              "name": "task_title",
+              "value": "Read Chapter 1"
+            },
+            {
+              "name": "task_description",
+              "value": "Read Chapter 1 and write summary."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        60
+      ],
+      "id": "efd46e74-2444-45ff-908f-ff42b7aa15b8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        80
+      ],
+      "id": "68c5c29d-006f-45ca-948b-72c7666275d1",
+      "name": "Wait",
+      "webhookId": "cace4a8e-dd15-4801-98d6-7444c747546d"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8c5b2747-b1a1-49b1-a0c8-67ffd5da1f67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8a8d53930fd149e44a03cf59f7814ab158f8281d4b54943ca5998025631c7b87"
+  },
+  "id": "SU4scUZ52EUWkIpj",
+  "tags": []
+}
